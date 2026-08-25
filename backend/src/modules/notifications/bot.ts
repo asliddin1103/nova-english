@@ -1,10 +1,14 @@
-import { Bot } from 'node-telegram-bot-api';
+import * as TelegramBotLib from 'node-telegram-bot-api';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const TelegramBot = (TelegramBotLib as any).default ?? TelegramBotLib;
 import { env } from '../../config/env';
 
 // Singleton bot instance
-let bot: Bot | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let bot: any = null;
 
-export const initBot = (): Bot | null => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const initBot = (): any | null => {
   if (!env.TELEGRAM_BOT_TOKEN) {
     console.warn('⚠️ TELEGRAM_BOT_TOKEN not provided, bot is disabled');
     return null;
@@ -13,12 +17,14 @@ export const initBot = (): Bot | null => {
   if (bot) return bot;
 
   try {
-    bot = new Bot(env.TELEGRAM_BOT_TOKEN);
+    bot = new TelegramBot(env.TELEGRAM_BOT_TOKEN, { polling: true });
+
+    const webAppUrl = process.env.MINI_APP_URL || 'https://nova-english-app.vercel.app';
 
     // Handle /start command
-    bot.command('start', async (ctx) => {
-      const firstName = ctx.from?.first_name || 'Do\'st';
-      const webAppUrl = process.env.MINI_APP_URL || 'https://nova-english-app.vercel.app';
+    bot.onText(/\/start/, async (msg: any) => {
+      const chatId = msg.chat.id;
+      const firstName = msg.from?.first_name || "Do'st";
 
       const welcomeText =
         `👋 *Assalomu alaykum, ${firstName}!*\n\n` +
@@ -30,7 +36,7 @@ export const initBot = (): Bot | null => {
         `🎙️ Speaking & Writing topshiriqlariga ustozlardan feedback olishingiz mumkin!\n\n` +
         `Darslarni boshlash uchun quyidagi tugmani bosing 👇`;
 
-      await ctx.reply(welcomeText, {
+      await bot!.sendMessage(chatId, welcomeText, {
         parse_mode: 'Markdown',
         reply_markup: {
           inline_keyboard: [
@@ -42,11 +48,11 @@ export const initBot = (): Bot | null => {
             ],
             [
               {
-                text: '💳 Obuna va To\'lov',
+                text: "💳 Obuna va To'lov",
                 callback_data: 'payment_info',
               },
               {
-                text: '📞 Qo\'llab-quvvatlash',
+                text: "📞 Qo'llab-quvvatlash",
                 url: 'https://t.me/nova_support',
               },
             ],
@@ -55,9 +61,11 @@ export const initBot = (): Bot | null => {
       });
     });
 
-    // Handle callback query (e.g. payment_info)
-    bot.on('callback_query:data', async (ctx) => {
-      if (ctx.callbackQuery.data === 'payment_info') {
+    // Handle callback queries
+    bot.on('callback_query', async (query: any) => {
+      if (!query.data || !query.message) return;
+
+      if (query.data === 'payment_info') {
         const paymentText =
           `💳 *Nova English To'lov ma'lumotlari:*\n\n` +
           `🔹 *Karta raqami:* \`${env.PAYMENT_CARD_NUMBER || '8600 1234 5678 9012'}\`\n` +
@@ -65,18 +73,14 @@ export const initBot = (): Bot | null => {
           `🔹 *Oylik to'lov:* 150 000 so'm / oy\n\n` +
           `To'lov qilgach, chek rasmini Mini App orqali yuboring. Adminlar tezda tasdiqlashadi!`;
 
-        await ctx.reply(paymentText, { parse_mode: 'Markdown' });
+        await bot!.sendMessage(query.message.chat.id, paymentText, { parse_mode: 'Markdown' });
       }
-      await ctx.answerCallbackQuery();
+
+      await bot!.answerCallbackQuery(query.id);
     });
 
     // Catch errors
-    bot.catch((err) => {
-      console.error('⚠️ Telegram Bot Error:', err);
-    });
-
-    // Start polling in background
-    bot.startPolling().catch((err) => {
+    bot.on('polling_error', (err: any) => {
       console.error('⚠️ Telegram Bot Polling Error:', err);
     });
 
@@ -88,13 +92,12 @@ export const initBot = (): Bot | null => {
   }
 };
 
-export const getBot = (): Bot => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const getBot = (): any => {
   if (!bot) {
     const initialized = initBot();
     if (initialized) return initialized;
-    return new Bot(env.TELEGRAM_BOT_TOKEN || 'dummy');
+    return new TelegramBot(env.TELEGRAM_BOT_TOKEN || 'dummy');
   }
   return bot;
 };
-
-

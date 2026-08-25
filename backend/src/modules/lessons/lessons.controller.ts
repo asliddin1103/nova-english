@@ -1,4 +1,4 @@
-﻿import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import * as lessonsService from './lessons.service';
 import { Errors } from '../../common/utils/errors';
 import { getPaginationParams, buildPaginationMeta } from '../../common/utils/pagination';
@@ -12,7 +12,7 @@ export const getLessons = async (req: Request, res: Response, next: NextFunction
 
 export const getLessonById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const lesson = await lessonsService.getLessonById(parseInt(req.params.id), req.student!.userId);
+    const lesson = await lessonsService.getLessonById(parseInt(req.params.id as string), req.student!.userId);
     res.json({ success: true, data: lesson });
   } catch (err) { next(err); }
 };
@@ -20,7 +20,7 @@ export const getLessonById = async (req: Request, res: Response, next: NextFunct
 export const markProgress = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const watchedSecs = req.body.watchedSecs ?? 0;
-    await lessonsService.markLessonProgress(req.student!.userId, parseInt(req.params.id), watchedSecs);
+    await lessonsService.markLessonProgress(req.student!.userId, parseInt(req.params.id as string), watchedSecs);
     res.json({ success: true, data: { message: 'Progress recorded' } });
   } catch (err) { next(err); }
 };
@@ -42,14 +42,14 @@ export const adminCreateLesson = async (req: Request, res: Response, next: NextF
 
 export const adminUpdateLesson = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const lesson = await lessonsService.adminUpdateLesson(parseInt(req.params.id), req.body);
+    const lesson = await lessonsService.adminUpdateLesson(parseInt(req.params.id as string), req.body);
     res.json({ success: true, data: lesson });
   } catch (err) { next(err); }
 };
 
 export const adminDeleteLesson = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    await lessonsService.adminDeleteLesson(parseInt(req.params.id));
+    await lessonsService.adminDeleteLesson(parseInt(req.params.id as string));
     res.json({ success: true, data: { message: 'Lesson unpublished' } });
   } catch (err) { next(err); }
 };

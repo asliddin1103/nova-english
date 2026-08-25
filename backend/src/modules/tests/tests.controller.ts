@@ -1,4 +1,4 @@
-﻿import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import path from 'path';
 import * as testsService from './tests.service';
@@ -14,7 +14,7 @@ export const getTests = async (req: Request, res: Response, next: NextFunction):
 
 export const getTestById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const test = await testsService.getTestById(parseInt(req.params.id), req.student!.userId);
+    const test = await testsService.getTestById(parseInt(req.params.id as string), req.student!.userId);
     res.json({ success: true, data: test });
   } catch (err) { next(err); }
 };
@@ -24,7 +24,7 @@ export const submitAutoTest = async (req: Request, res: Response, next: NextFunc
     const { answers, timeTaken } = req.body;
     if (!Array.isArray(answers)) return next(Errors.badRequest('answers must be an array'));
     const result = await testsService.submitAutoTest(
-      req.student!.userId, parseInt(req.params.id), answers, timeTaken
+      req.student!.userId, parseInt(req.params.id as string), answers, timeTaken
     );
     res.json({ success: true, data: result });
   } catch (err) { next(err); }
@@ -49,7 +49,7 @@ export const adminReviewSubmission = async (req: Request, res: Response, next: N
     const { feedback, score, reject } = req.body;
     if (!feedback) return next(Errors.badRequest('Feedback is required'));
     const result = await testsService.reviewSubmission(
-      parseInt(req.params.id), req.admin!.staffId, feedback, score, reject
+      parseInt(req.params.id as string), req.admin!.staffId, feedback, score, reject
     );
     res.json({ success: true, data: result });
   } catch (err) { next(err); }

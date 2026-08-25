@@ -1,4 +1,4 @@
-﻿import { Router } from 'express';
+import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import { requireStudent, requireAdmin } from '../../common/middleware/auth.middleware';
@@ -38,7 +38,7 @@ router.post('/:id/manual-submit', requireStudent, uploadSubmission.single('file'
     const { type, content } = req.body;
     const fileUrl = req.file ? `/uploads/submissions/${req.file.filename}` : undefined;
     const { submitManualTest } = await import('./tests.service');
-    const result = await submitManualTest(req.student!.userId, parseInt(req.params.id), type, content, fileUrl);
+    const result = await submitManualTest(req.student!.userId, parseInt(req.params.id as string), type, content, fileUrl);
     res.status(201).json({ success: true, data: result });
   } catch (err) { next(err); }
 });
