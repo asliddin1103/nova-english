@@ -1,0 +1,323 @@
+// Nova English — Prisma Schema
+// Database: PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================
+// USERS (Students via Telegram)
+// ============================================================
+model User {
+  id                    Int       @id @default(autoincrement())
+  telegramId            String    @unique
+  username              String?
+  firstName             String
+  lastName              String?
+  photoUrl              String?
+  languageLevel         String    @default("A1")
+  isSubscribed          Boolean   @default(false)
+  subscriptionExpiresAt DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  payments    Payment[]
+  progress    LessonProgress[]
+  testResults TestResult[]
+  submissions Submission[]
+  streak      Streak?
+  coins       Coins?
+  receipts    Receipt[]
+}
+
+model StaffAccount {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  password  String
+  name      String
+  role      StaffRole
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+
+  reviewedSubmissions Submission[] @relation("ReviewedBy")
+  auditLogs           AuditLog[]
+  approvedPayments    Payment[]    @relation("ApprovedBy")
+}
+
+enum StaffRole {
+  SUPER_ADMIN
+  CONTENT_ADMIN
+  FINANCE_ADMIN
+  TEACHER
+}
+
+model Lesson {
+  id           Int      @id @default(autoincrement())
+  title        String
+  description  String?
+  youtubeId    String
+  level        String
+  order        Int
+  isPublished  Boolean  @default(false)
+  category     String?
+  thumbnailUrl String?
+  durationSecs Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  progress   LessonProgress[]
+  dictionary DictionaryWord[]
+  tests      Test[]
+}
+
+model LessonProgress {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  lessonId    Int
+  completedAt DateTime @default(now())
+  watchedSecs Int      @default(0)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+}
+
+model Test {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  type        TestType
+  level       String?
+  lessonId    Int?
+  isPublished Boolean  @default(false)
+  coinReward  Int      @default(0)
+  timeLimit   Int?
+  createdAt   DateTime @default(now())
+
+  lesson      Lesson?      @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  questions   Question[]
+  results     TestResult[]
+  submissions Submission[]
+}
+
+enum TestType {
+  VOCABULARY
+  GRAMMAR
+  IELTS_LISTENING
+  IELTS_READING
+  IELTS_WRITING
+  IELTS_SPEAKING
+  SPEAKING
+}
+
+model Question {
+  id            Int          @id @default(autoincrement())
+  testId        Int
+  text          String
+  type          QuestionType
+  options       Json?
+  correctAnswer String?
+  audioUrl      String?
+  imageUrl      String?
+  order         Int
+
+  test    Test     @relation(fields: [testId], references: [id], onDelete: Cascade)
+  answers Answer[]
+
+  @@index([testId])
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  FILL_IN_BLANK
+}
+
+model TestResult {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  testId      Int
+  score       Float
+  coinsEarned Int      @default(0)
+  timeTaken   Int?
+  completedAt DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  test    Test     @relation(fields: [testId], references: [id], onDelete: Cascade)
+  answers Answer[]
+
+  @@index([userId])
+  @@index([testId])
+}
+
+model Answer {
+  id           Int     @id @default(autoincrement())
+  testResultId Int
+  questionId   Int
+  givenAnswer  String
+  isCorrect    Boolean
+
+  testResult TestResult @relation(fields: [testResultId], references: [id], onDelete: Cascade)
+  question   Question   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+model Submission {
+  id           Int              @id @default(autoincrement())
+  userId       Int
+  testId       Int
+  type         SubmissionType
+  content      String?
+  fileUrl      String?
+  status       SubmissionStatus @default(PENDING)
+  feedback     String?
+  score        String?
+  reviewedById Int?
+  reviewedAt   DateTime?
+  submittedAt  DateTime         @default(now())
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  test     Test          @relation(fields: [testId], references: [id], onDelete: Cascade)
+  reviewer StaffAccount? @relation("ReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([status])
+}
+
+enum SubmissionType {
+  AUDIO
+  TEXT
+  FILE
+}
+
+enum SubmissionStatus {
+  PENDING
+  REVIEWED
+  REJECTED
+}
+
+model Payment {
+  id             Int           @id @default(autoincrement())
+  userId         Int
+  amount         Int
+  method         PaymentMethod @default(MANUAL_CARD)
+  status         PaymentStatus @default(PENDING)
+  receiptId      Int?          @unique
+  approvedById   Int?
+  approvedAt     DateTime?
+  durationDays   Int           @default(30)
+  rejectedReason String?
+  createdAt      DateTime      @default(now())
+
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  receipt    Receipt?      @relation(fields: [receiptId], references: [id])
+  approvedBy StaffAccount? @relation("ApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([status])
+}
+
+enum PaymentMethod {
+  MANUAL_CARD
+  PAYME
+  CLICK
+  UZUMBANK
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Receipt {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  fileUrl    String
+  uploadedAt DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payment Payment?
+}
+
+model LibraryResource {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  type        String
+  url         String
+  level       String?
+  tags        String[]
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model DictionaryWord {
+  id              Int     @id @default(autoincrement())
+  word            String
+  translation     String
+  pronunciation   String?
+  audioUrl        String?
+  definition      String?
+  exampleSentence String?
+  lessonId        Int?
+  level           String?
+
+  lesson Lesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+
+  @@index([word])
+}
+
+model Coins {
+  id     Int @id @default(autoincrement())
+  userId Int @unique
+  total  Int @default(0)
+
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions CoinTransaction[]
+}
+
+model CoinTransaction {
+  id        Int      @id @default(autoincrement())
+  coinsId   Int
+  amount    Int
+  reason    String
+  createdAt DateTime @default(now())
+
+  coins Coins @relation(fields: [coinsId], references: [id], onDelete: Cascade)
+
+  @@index([coinsId])
+}
+
+model Streak {
+  id             Int       @id @default(autoincrement())
+  userId         Int       @unique
+  currentStreak  Int       @default(0)
+  longestStreak  Int       @default(0)
+  lastActivityAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  staffId    Int
+  action     String
+  entityType String
+  entityId   Int?
+  oldValue   Json?
+  newValue   Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  staff StaffAccount @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId])
+  @@index([createdAt])
+}

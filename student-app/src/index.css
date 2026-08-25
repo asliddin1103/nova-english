@@ -1,0 +1,58 @@
+﻿@import "tailwindcss";
+
+@theme {
+  /* Nova English Brand Colors */
+  --color-nova-primary: #1A73E8;
+  --color-nova-primary-dark: #1557B0;
+  --color-nova-primary-light: #4A9EF5;
+  --color-nova-accent: #FFC107;
+  --color-nova-accent-dark: #FFB300;
+  --color-nova-navy: #0A1628;
+  --color-nova-navy-card: #0F2044;
+
+  /* Shadows */
+  --shadow-soft: 0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04);
+  --shadow-glow-blue: 0 0 20px rgba(26, 115, 232, 0.3);
+  --shadow-glow-gold: 0 0 20px rgba(255, 193, 7, 0.35);
+}
+
+@layer base {
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body, #root {
+    height: 100%;
+    width: 100%;
+    font-family: "Inter", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    background: #f8fafc;
+    color: #0f172a;
+  }
+
+  /* Telegram Mini App: full viewport */
+  @media (max-width: 480px) {
+    html, body { overflow: hidden; }
+  }
+}
+
+@layer utilities {
+  .hide-scrollbar::-webkit-scrollbar { display: none; }
+  .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .shadow-soft { box-shadow: var(--shadow-soft); }
+  .shadow-glow-blue { box-shadow: var(--shadow-glow-blue); }
+  .shadow-glow-gold { box-shadow: var(--shadow-glow-gold); }
+
+  .nova-gradient {
+    background: linear-gradient(135deg, #1A73E8 0%, #1557B0 100%);
+  }
+
+  .gold-gradient {
+    background: linear-gradient(135deg, #FFC107 0%, #FF8F00 100%);
+  }
+}
