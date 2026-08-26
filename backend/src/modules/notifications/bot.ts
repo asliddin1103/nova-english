@@ -1,14 +1,10 @@
-import * as TelegramBotLib from 'node-telegram-bot-api';
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const TelegramBot = (TelegramBotLib as any).default ?? TelegramBotLib;
+import { Bot } from 'node-telegram-bot-api';
 import { env } from '../../config/env';
 
 // Singleton bot instance
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let bot: any = null;
+let bot: Bot | null = null;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const initBot = (): any | null => {
+export const initBot = (): Bot | null => {
   if (!env.TELEGRAM_BOT_TOKEN) {
     console.warn('⚠️ TELEGRAM_BOT_TOKEN not provided, bot is disabled');
     return null;
@@ -17,14 +13,13 @@ export const initBot = (): any | null => {
   if (bot) return bot;
 
   try {
-    bot = new TelegramBot(env.TELEGRAM_BOT_TOKEN, { polling: true });
+    bot = new Bot(env.TELEGRAM_BOT_TOKEN);
 
     const webAppUrl = process.env.MINI_APP_URL || 'https://nova-english-app.vercel.app';
 
     // Handle /start command
-    bot.onText(/\/start/, async (msg: any) => {
-      const chatId = msg.chat.id;
-      const firstName = msg.from?.first_name || "Do'st";
+    bot.command('start', async (ctx) => {
+      const firstName = ctx.from?.first_name || "Do'st";
 
       const welcomeText =
         `👋 *Assalomu alaykum, ${firstName}!*\n\n` +
@@ -36,7 +31,7 @@ export const initBot = (): any | null => {
         `🎙️ Speaking & Writing topshiriqlariga ustozlardan feedback olishingiz mumkin!\n\n` +
         `Darslarni boshlash uchun quyidagi tugmani bosing 👇`;
 
-      await bot!.sendMessage(chatId, welcomeText, {
+      await ctx.reply(welcomeText, {
         parse_mode: 'Markdown',
         reply_markup: {
           inline_keyboard: [
@@ -62,8 +57,9 @@ export const initBot = (): any | null => {
     });
 
     // Handle callback queries
-    bot.on('callback_query', async (query: any) => {
-      if (!query.data || !query.message) return;
+    bot.on('callback_query', async (ctx) => {
+      const query = ctx.callbackQuery;
+      if (!query?.data) return;
 
       if (query.data === 'payment_info') {
         const paymentText =
@@ -73,14 +69,14 @@ export const initBot = (): any | null => {
           `🔹 *Oylik to'lov:* 150 000 so'm / oy\n\n` +
           `To'lov qilgach, chek rasmini Mini App orqali yuboring. Adminlar tezda tasdiqlashadi!`;
 
-        await bot!.sendMessage(query.message.chat.id, paymentText, { parse_mode: 'Markdown' });
+        await ctx.reply(paymentText, { parse_mode: 'Markdown' });
       }
 
-      await bot!.answerCallbackQuery(query.id);
+      await ctx.answerCallbackQuery();
     });
 
-    // Catch errors
-    bot.on('polling_error', (err: any) => {
+    // Start polling
+    bot.startPolling().catch((err) => {
       console.error('⚠️ Telegram Bot Polling Error:', err);
     });
 
@@ -92,12 +88,9 @@ export const initBot = (): any | null => {
   }
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const getBot = (): any => {
+export const getBot = (): Bot | null => {
   if (!bot) {
-    const initialized = initBot();
-    if (initialized) return initialized;
-    return new TelegramBot(env.TELEGRAM_BOT_TOKEN || 'dummy');
+    return initBot();
   }
   return bot;
 };

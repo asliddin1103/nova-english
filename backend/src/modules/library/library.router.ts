@@ -49,14 +49,14 @@ router.post('/admin', requireAdmin, requireRoles('CONTENT_ADMIN', 'SUPER_ADMIN')
 
 router.patch('/admin/:id', requireAdmin, requireRoles('CONTENT_ADMIN', 'SUPER_ADMIN'), async (req, res, next) => {
   try {
-    const resource = await prisma.libraryResource.update({ where: { id: parseInt(req.params.id as string) }, data: req.body });
+    const resource = await prisma.libraryResource.update({ where: { id: parseInt(String(req.params.id)) }, data: req.body });
     res.json({ success: true, data: resource });
   } catch (err) { next(err); }
 });
 
 router.delete('/admin/:id', requireAdmin, requireRoles('CONTENT_ADMIN', 'SUPER_ADMIN'), async (req, res, next) => {
   try {
-    await prisma.libraryResource.delete({ where: { id: parseInt(req.params.id as string) } });
+    await prisma.libraryResource.delete({ where: { id: parseInt(String(req.params.id)) } });
     res.json({ success: true, data: { message: 'Resource deleted' } });
   } catch (err) { next(err); }
 });

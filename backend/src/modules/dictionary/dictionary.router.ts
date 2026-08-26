@@ -35,14 +35,14 @@ router.post('/admin', requireAdmin, requireRoles('CONTENT_ADMIN', 'SUPER_ADMIN')
 
 router.patch('/admin/:id', requireAdmin, requireRoles('CONTENT_ADMIN', 'SUPER_ADMIN'), async (req, res, next) => {
   try {
-    const word = await prisma.dictionaryWord.update({ where: { id: parseInt(req.params.id as string) }, data: req.body });
+    const word = await prisma.dictionaryWord.update({ where: { id: parseInt(String(req.params.id)) }, data: req.body });
     res.json({ success: true, data: word });
   } catch (err) { next(err); }
 });
 
 router.delete('/admin/:id', requireAdmin, requireRoles('CONTENT_ADMIN', 'SUPER_ADMIN'), async (req, res, next) => {
   try {
-    await prisma.dictionaryWord.delete({ where: { id: parseInt(req.params.id as string) } });
+    await prisma.dictionaryWord.delete({ where: { id: parseInt(String(req.params.id)) } });
     res.json({ success: true, data: { message: 'Word deleted' } });
   } catch (err) { next(err); }
 });

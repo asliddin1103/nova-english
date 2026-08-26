@@ -12,7 +12,7 @@ export const getLessons = async (req: Request, res: Response, next: NextFunction
 
 export const getLessonById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const lesson = await lessonsService.getLessonById(parseInt(req.params.id as string), req.student!.userId);
+    const lesson = await lessonsService.getLessonById(parseInt(String(req.params.id)), req.student!.userId);
     res.json({ success: true, data: lesson });
   } catch (err) { next(err); }
 };
@@ -20,7 +20,7 @@ export const getLessonById = async (req: Request, res: Response, next: NextFunct
 export const markProgress = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const watchedSecs = req.body.watchedSecs ?? 0;
-    await lessonsService.markLessonProgress(req.student!.userId, parseInt(req.params.id as string), watchedSecs);
+    await lessonsService.markLessonProgress(req.student!.userId, parseInt(String(req.params.id)), watchedSecs);
     res.json({ success: true, data: { message: 'Progress recorded' } });
   } catch (err) { next(err); }
 };
@@ -42,14 +42,14 @@ export const adminCreateLesson = async (req: Request, res: Response, next: NextF
 
 export const adminUpdateLesson = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const lesson = await lessonsService.adminUpdateLesson(parseInt(req.params.id as string), req.body);
+    const lesson = await lessonsService.adminUpdateLesson(parseInt(String(req.params.id)), req.body);
     res.json({ success: true, data: lesson });
   } catch (err) { next(err); }
 };
 
 export const adminDeleteLesson = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    await lessonsService.adminDeleteLesson(parseInt(req.params.id as string));
+    await lessonsService.adminDeleteLesson(parseInt(String(req.params.id)));
     res.json({ success: true, data: { message: 'Lesson unpublished' } });
   } catch (err) { next(err); }
 };

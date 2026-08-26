@@ -46,7 +46,7 @@ export const adminGetAllPayments = async (req: Request, res: Response, next: Nex
 
 export const adminApprovePayment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const paymentId = parseInt(req.params.id as string, 10);
+    const paymentId = parseInt(String(req.params.id), 10);
     const result = await paymentsService.approvePayment(paymentId, req.admin!.staffId, req.ip);
     res.json({ success: true, data: result });
   } catch (err) { next(err); }
@@ -54,7 +54,7 @@ export const adminApprovePayment = async (req: Request, res: Response, next: Nex
 
 export const adminRejectPayment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const paymentId = parseInt(req.params.id as string, 10);
+    const paymentId = parseInt(String(req.params.id), 10);
     const { reason } = req.body;
     if (!reason) return next(Errors.badRequest('Rejection reason is required'));
     const result = await paymentsService.rejectPayment(paymentId, req.admin!.staffId, reason, req.ip);

@@ -55,7 +55,7 @@ router.get('/users', requireAdmin, async (req, res, next) => {
 router.get('/users/:id', requireAdmin, async (req, res, next) => {
   try {
     const user = await prisma.user.findUnique({
-      where: { id: parseInt(req.params.id as string) },
+      where: { id: parseInt(String(req.params.id)) },
       include: {
         payments: { include: { receipt: true }, orderBy: { createdAt: 'desc' } },
         progress: { include: { lesson: { select: { title: true } } }, orderBy: { completedAt: 'desc' }, take: 20 },
@@ -94,9 +94,9 @@ router.post('/staff', requireAdmin, requireRoles('SUPER_ADMIN'), async (req, res
 router.patch('/staff/:id', requireAdmin, requireRoles('SUPER_ADMIN'), async (req, res, next) => {
   try {
     const { role, isActive, name } = req.body;
-    const old = await prisma.staffAccount.findUnique({ where: { id: parseInt(req.params.id as string) } });
+    const old = await prisma.staffAccount.findUnique({ where: { id: parseInt(String(req.params.id)) } });
     const staff = await prisma.staffAccount.update({
-      where: { id: parseInt(req.params.id as string) },
+      where: { id: parseInt(String(req.params.id)) },
       data: { ...(role && { role }), ...(isActive !== undefined && { isActive }), ...(name && { name }) },
       select: { id: true, name: true, email: true, role: true, isActive: true },
     });
