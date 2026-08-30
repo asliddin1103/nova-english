@@ -18,6 +18,8 @@ import libraryRouter from './modules/library/library.router';
 import dictionaryRouter from './modules/dictionary/dictionary.router';
 import gamificationRouter from './modules/gamification/gamification.router';
 import adminRouter from './modules/admin/admin.router';
+import exportRouter from './modules/admin/export.router';
+import onboardingRouter from './modules/onboarding/onboarding.router';
 
 const app = express();
 
@@ -69,6 +71,8 @@ app.use('/api/v1/library', libraryRouter);
 app.use('/api/v1/dictionary', dictionaryRouter);
 app.use('/api/v1/gamification', gamificationRouter);
 app.use('/api/v1/admin', adminRouter);
+app.use('/api/v1/admin/export', exportRouter);
+app.use('/api/v1/onboarding', onboardingRouter);
 
 // ── Health check
 app.get('/health', (_req, res) => {

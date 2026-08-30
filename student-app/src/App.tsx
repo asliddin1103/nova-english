@@ -1,9 +1,11 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Toaster } from "react-hot-toast";
 
 import { useTelegramAuth } from "./features/auth/useTelegramAuth";
 import { useStore } from "./store/useStore";
+import { useOnboarding } from "./features/onboarding/useOnboarding";
+import OnboardingPage from "./features/onboarding/OnboardingPage";
 
 import TopBar from "./components/layout/TopBar";
 import BottomNav from "./components/layout/BottomNav";
@@ -69,6 +71,20 @@ export default function App() {
   const { user } = useStore();
   const [activeTab, setActiveTab] = useState<Tab>("home");
   const [showPayment, setShowPayment] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingChecked, setOnboardingChecked] = useState(false);
+  const { status, checkStatus } = useOnboarding();
+
+  useEffect(() => {
+    if (!loading && user) {
+      checkStatus().then((res) => {
+        if (!res.isCompleted) {
+          setShowOnboarding(true);
+        }
+        setOnboardingChecked(true);
+      });
+    }
+  }, [loading, user, checkStatus]);
 
   const isSubscribed = !!(
     user?.isSubscribed &&
@@ -76,8 +92,18 @@ export default function App() {
     new Date(user.subscriptionExpiresAt) > new Date()
   );
 
-  if (loading) return <LoadingScreen />;
+  if (loading || (user && !onboardingChecked)) return <LoadingScreen />;
   if (error) return <ErrorScreen message={error} />;
+
+  if (showOnboarding) {
+    return (
+      <OnboardingPage
+        initial={status?.partial || {}}
+        onComplete={() => setShowOnboarding(false)}
+        onSkip={() => setShowOnboarding(false)}
+      />
+    );
+  }
 
   if (showPayment) {
     return (

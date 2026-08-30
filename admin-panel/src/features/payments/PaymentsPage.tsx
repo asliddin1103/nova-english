@@ -1,12 +1,14 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle, XCircle, Image, Clock } from "@phosphor-icons/react";
+import { CheckCircle, XCircle, Image, Clock, FileXls, SpinnerGap } from "@phosphor-icons/react";
 import api from "../../services/api";
+import { exportPaymentsToExcel } from "../../services/exportService";
 import toast from "react-hot-toast";
 
 export default function PaymentsPage() {
   const [payments, setPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [selected, setSelected] = useState<any | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [processing, setProcessing] = useState(false);
@@ -22,6 +24,20 @@ export default function PaymentsPage() {
   };
 
   useEffect(() => { fetchPayments(); }, [tab]);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      await exportPaymentsToExcel({
+        status: tab === "pending" ? "PENDING" : undefined,
+      });
+      toast.success("To''lovlar tarixi Excel formatda yuklandi!");
+    } catch (err: any) {
+      toast.error("Excel eksport qilishda xatolik");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const handleApprove = async (id: number) => {
     setProcessing(true);
@@ -56,19 +72,34 @@ export default function PaymentsPage() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-black text-slate-800">To''lovlar</h1>
           <p className="text-slate-500 text-sm mt-1">Chek rasmlarini tekshirish va tasdiqlash</p>
         </div>
-        <div className="flex gap-2">
-          {["pending", "all"].map(t => (
-            <button key={t} onClick={() => setTab(t as any)}
-              className={`px-4 py-2 rounded-[14px] text-sm font-bold transition-all ${tab === t ? "nova-gradient text-white" : "bg-white text-slate-600 border border-slate-200"}`}
-            >
-              {t === "pending" ? "⏳ Kutilmoqda" : "📋 Barchasi"}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex gap-1.5 bg-white p-1 rounded-[16px] border border-slate-200 shadow-soft">
+            {["pending", "all"].map(t => (
+              <button key={t} onClick={() => setTab(t as any)}
+                className={`px-3.5 py-1.5 rounded-[12px] text-xs font-bold transition-all ${tab === t ? "bg-[#1A73E8] text-white shadow-sm" : "text-slate-600 hover:bg-slate-50"}`}
+              >
+                {t === "pending" ? "⏳ Kutilmoqda" : "📋 Barchasi"}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-[14px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-[0_4px_12px_rgba(5,150,105,0.25)] transition-all active:scale-[0.98] disabled:opacity-50"
+          >
+            {exporting ? (
+              <SpinnerGap size={15} className="animate-spin" />
+            ) : (
+              <FileXls size={15} weight="bold" />
+            )}
+            <span>{exporting ? "Eksport..." : "Excel yuklab olish"}</span>
+          </button>
         </div>
       </div>
 

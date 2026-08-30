@@ -1,10 +1,10 @@
-﻿import { motion } from "framer-motion";
+import { motion } from "framer-motion";
 import {
-  ChartBar, Users, CreditCard, PencilLine, BookOpen, SignOut, List, X
+  ChartBar, Users, CreditCard, PencilLine, BookOpen, SignOut, List, X, TrendUp
 } from "@phosphor-icons/react";
 import { useAdminStore } from "../../store/useAdminStore";
 
-type Page = "dashboard" | "payments" | "users" | "submissions" | "lessons";
+type Page = "dashboard" | "stats" | "payments" | "users" | "submissions" | "lessons";
 
 interface SidebarProps {
   activePage: Page;
@@ -15,6 +15,7 @@ interface SidebarProps {
 
 const NAV_ITEMS: { id: Page; icon: any; label: string; roles?: string[] }[] = [
   { id: "dashboard", icon: ChartBar, label: "Dashboard" },
+  { id: "stats", icon: TrendUp, label: "Statistika", roles: ["SUPER_ADMIN", "FINANCE_ADMIN", "CONTENT_ADMIN"] },
   { id: "payments", icon: CreditCard, label: "To''lovlar", roles: ["FINANCE_ADMIN", "SUPER_ADMIN"] },
   { id: "users", icon: Users, label: "Foydalanuvchilar" },
   { id: "submissions", icon: PencilLine, label: "Topshiriqlar", roles: ["TEACHER", "SUPER_ADMIN"] },

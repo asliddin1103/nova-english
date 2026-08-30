@@ -9,8 +9,9 @@ import DashboardPage from "./features/dashboard/DashboardPage";
 import PaymentsPage from "./features/payments/PaymentsPage";
 import UsersPage from "./features/users/UsersPage";
 import SubmissionsPage from "./features/submissions/SubmissionsPage";
+import StatsPage from "./features/stats/StatsPage";
 
-type Page = "dashboard" | "payments" | "users" | "submissions" | "lessons";
+type Page = "dashboard" | "stats" | "payments" | "users" | "submissions" | "lessons";
 
 export default function App() {
   const { isAuthenticated, admin, token } = useAdminStore();
@@ -29,6 +30,7 @@ export default function App() {
 
   const PAGE_TITLES: Record<Page, string> = {
     dashboard: "Dashboard",
+    stats: "Statistika",
     payments: "To''lovlar",
     users: "Foydalanuvchilar",
     submissions: "Topshiriqlar",
@@ -68,6 +70,7 @@ export default function App() {
         {/* Page content */}
         <main className="flex-1 overflow-y-auto">
           {page === "dashboard" && <DashboardPage onNavigate={(p) => setPage(p as Page)} />}
+          {page === "stats" && <StatsPage />}
           {page === "payments" && <PaymentsPage />}
           {page === "users" && <UsersPage />}
           {page === "submissions" && <SubmissionsPage />}

@@ -1,42 +1,103 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { MagnifyingGlass, Fire, Coin, CheckCircle } from "@phosphor-icons/react";
+import { MagnifyingGlass, Fire, Coin, CheckCircle, FileXls, SpinnerGap } from "@phosphor-icons/react";
 import api from "../../services/api";
+import { exportUsersToExcel } from "../../services/exportService";
+import toast from "react-hot-toast";
 
 export default function UsersPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [search, setSearch] = useState("");
+  const [subFilter, setSubFilter] = useState<string>("all"); // "all" | "true" | "false"
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState<any>(null);
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/admin/users?q=${search}&page=${page}&limit=20`);
+      let url = `/admin/users?q=${encodeURIComponent(search)}&page=${page}&limit=20`;
+      if (subFilter !== "all") {
+        url += `&isSubscribed=${subFilter}`;
+      }
+      const res = await api.get(url);
       setUsers(res.data.data ?? []);
       setMeta(res.data.meta);
     } catch { setUsers([]); } finally { setLoading(false); }
   };
 
-  useEffect(() => { setPage(1); }, [search]);
-  useEffect(() => { fetchUsers(); }, [search, page]);
+  useEffect(() => { setPage(1); }, [search, subFilter]);
+  useEffect(() => { fetchUsers(); }, [search, subFilter, page]);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      await exportUsersToExcel({
+        q: search,
+        isSubscribed: subFilter !== "all" ? subFilter : undefined,
+      });
+      toast.success("Foydalanuvchilar ro''yxati Excel formatda yuklandi!");
+    } catch (err: any) {
+      toast.error("Excel eksport qilishda xatolik yuz berdi");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-800">Foydalanuvchilar</h1>
           <p className="text-slate-500 text-sm mt-1">{meta?.total ?? "?"} ta ro''yxatdan o''tgan</p>
         </div>
+
+        <button
+          onClick={handleExport}
+          disabled={exporting}
+          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-[0_4px_14px_rgba(5,150,105,0.3)] transition-all active:scale-[0.98] disabled:opacity-50"
+        >
+          {exporting ? (
+            <SpinnerGap size={18} className="animate-spin" />
+          ) : (
+            <FileXls size={18} weight="bold" />
+          )}
+          <span>{exporting ? "Eksport qilinmoqda..." : "Excel yuklab olish"}</span>
+        </button>
       </div>
 
-      {/* Search */}
-      <div className="relative mb-5">
-        <MagnifyingGlass size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Ism, username yoki Telegram ID..."
-          className="w-full pl-11 pr-4 py-3.5 bg-white border border-slate-200 rounded-[18px] text-sm focus:outline-none focus:ring-2 focus:ring-[#1A73E8] shadow-soft"
-        />
+      {/* Filter and Search Bar */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-5">
+        <div className="relative flex-1">
+          <MagnifyingGlass size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Ism, username yoki Telegram ID..."
+            className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-[18px] text-sm focus:outline-none focus:ring-2 focus:ring-[#1A73E8] shadow-soft"
+          />
+        </div>
+
+        <div className="flex gap-1.5 bg-white p-1 rounded-[18px] border border-slate-200 shadow-soft">
+          {[
+            { id: "all", label: "Barchasi" },
+            { id: "true", label: "Obunachilar" },
+            { id: "false", label: "Obunasiz" },
+          ].map((f) => (
+            <button
+              key={f.id}
+              onClick={() => setSubFilter(f.id)}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                subFilter === f.id
+                  ? "bg-[#1A73E8] text-white shadow-sm"
+                  : "text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Table */}

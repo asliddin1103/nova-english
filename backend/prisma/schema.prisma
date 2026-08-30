@@ -25,13 +25,34 @@ model User {
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
-  payments    Payment[]
-  progress    LessonProgress[]
-  testResults TestResult[]
-  submissions Submission[]
-  streak      Streak?
-  coins       Coins?
-  receipts    Receipt[]
+  payments     Payment[]
+  progress     LessonProgress[]
+  testResults  TestResult[]
+  submissions  Submission[]
+  streak       Streak?
+  coins        Coins?
+  receipts     Receipt[]
+  onboarding   UserOnboarding?
+}
+
+// ============================================================
+// USER ONBOARDING SURVEY
+// ============================================================
+model UserOnboarding {
+  id           Int       @id @default(autoincrement())
+  userId       Int       @unique
+  ageGroup     String?   // "13-17" | "18-24" | "25-34" | "35+"
+  gender       String?   // "Erkak" | "Ayol" | "Aytmoqchi emasman"
+  goals        String[]  // multi-select
+  currentLevel String?   // "Noldan" | "Boshlangich" | "Orta" | "Yaxshi"
+  skills       String[]  // multi-select
+  dailyTime    String?   // "15dan_kam" | "15-30" | "30-60" | "1soat_oshiq"
+  isCompleted  Boolean   @default(false)
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model StaffAccount {

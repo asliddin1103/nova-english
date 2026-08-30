@@ -122,10 +122,18 @@ router.get('/audit-logs', requireAdmin, requireRoles('SUPER_ADMIN'), async (req,
 });
 
 // Stats
-router.get('/stats', requireAdmin, requireRoles('FINANCE_ADMIN', 'SUPER_ADMIN'), async (_req, res, next) => {
+router.get('/stats', requireAdmin, async (_req, res, next) => {
   try {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const [revenueByDay, newUsersByDay, totalByLevel] = await Promise.all([
+    const [
+      revenueByDay,
+      newUsersByDay,
+      totalByLevel,
+      totalUsers,
+      subscribedUsers,
+      totalRevenue,
+      allOnboardings,
+    ] = await Promise.all([
       prisma.payment.groupBy({
         by: ['createdAt'], where: { status: 'APPROVED', createdAt: { gte: thirtyDaysAgo } },
         _sum: { amount: true },
@@ -135,8 +143,52 @@ router.get('/stats', requireAdmin, requireRoles('FINANCE_ADMIN', 'SUPER_ADMIN'),
         _count: { id: true },
       }),
       prisma.user.groupBy({ by: ['languageLevel'], _count: { id: true } }),
+      prisma.user.count(),
+      prisma.user.count({ where: { isSubscribed: true } }),
+      prisma.payment.aggregate({ where: { status: 'APPROVED' }, _sum: { amount: true } }),
+      prisma.userOnboarding.findMany({ where: { isCompleted: true } }),
     ]);
-    res.json({ success: true, data: { revenueByDay, newUsersByDay, totalByLevel } });
+
+    const completedOnboardings = allOnboardings.length;
+
+    const countItems = (arr: (string | undefined | null)[][]) => {
+      const counts: Record<string, number> = {};
+      arr.flat().forEach(item => {
+        if (item && item.trim()) {
+          counts[item] = (counts[item] || 0) + 1;
+        }
+      });
+      return Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([label, count]) => ({
+          label,
+          count,
+          pct: completedOnboardings > 0 ? Math.round((count / completedOnboardings) * 100) : 0,
+        }));
+    };
+
+    const onboardingSummary = {
+      totalCompleted: completedOnboardings,
+      ageStats: countItems(allOnboardings.map(o => [o.ageGroup])),
+      genderStats: countItems(allOnboardings.map(o => [o.gender])),
+      goalStats: countItems(allOnboardings.map(o => o.goals)),
+      levelStats: countItems(allOnboardings.map(o => [o.currentLevel])),
+      skillStats: countItems(allOnboardings.map(o => o.skills)),
+      timeStats: countItems(allOnboardings.map(o => [o.dailyTime])),
+    };
+
+    res.json({
+      success: true,
+      data: {
+        totalUsers,
+        subscribedUsers,
+        totalRevenue: totalRevenue._sum.amount ?? 0,
+        revenueByDay,
+        newUsersByDay,
+        totalByLevel,
+        onboarding: onboardingSummary,
+      },
+    });
   } catch (err) { next(err); }
 });
 
