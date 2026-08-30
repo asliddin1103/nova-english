@@ -26,6 +26,7 @@ export const devLogin = async (telegramId = "123456789", firstName = "Student", 
     include: {
       streak: true,
       coins: true,
+      onboarding: true,
     },
   });
 
@@ -69,6 +70,7 @@ export const authWithTelegram = async (initData: string) => {
     include: {
       streak: true,
       coins: true,
+      onboarding: true,
     },
   });
 

@@ -77,14 +77,20 @@ export default function App() {
 
   useEffect(() => {
     if (!loading && user) {
+      if (user.onboardingCompleted) {
+        setShowOnboarding(false);
+        setOnboardingChecked(true);
+        return;
+      }
+
       checkStatus().then((res) => {
-        if (!res.isCompleted) {
-          setShowOnboarding(true);
-        }
+        setShowOnboarding(!res.isCompleted);
+        setOnboardingChecked(true);
+      }).catch(() => {
         setOnboardingChecked(true);
       });
     }
-  }, [loading, user, checkStatus]);
+  }, [loading, user?.id, user?.onboardingCompleted, checkStatus]);
 
   const isSubscribed = !!(
     user?.isSubscribed &&

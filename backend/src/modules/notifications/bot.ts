@@ -1,5 +1,6 @@
 import { Bot } from 'node-telegram-bot-api';
 import { env } from '../../config/env';
+import { prisma } from '../../database/prisma';
 
 // Singleton bot instance
 let bot: Bot | null = null;
@@ -19,7 +20,45 @@ export const initBot = (): Bot | null => {
 
     // Handle /start command
     bot.command('start', async (ctx) => {
+      const telegramId = ctx.from?.id ? String(ctx.from.id) : null;
       const firstName = ctx.from?.first_name || "Do'st";
+      const lastName = ctx.from?.last_name || null;
+      const username = ctx.from?.username || null;
+
+      if (telegramId) {
+        try {
+          const existingUser = await prisma.user.findUnique({
+            where: { telegramId },
+          });
+
+          if (!existingUser) {
+            // 1. Yangi foydalanuvchi — onboardingCompleted = false
+            await prisma.user.create({
+              data: {
+                telegramId,
+                firstName,
+                lastName,
+                username,
+                onboardingCompleted: false,
+                streak: { create: {} },
+                coins: { create: { total: 0 } },
+              },
+            });
+          } else {
+            // 2. Mavjud foydalanuvchi ma'lumotlarini yangilash
+            await prisma.user.update({
+              where: { telegramId },
+              data: {
+                firstName,
+                lastName,
+                username,
+              },
+            });
+          }
+        } catch (dbErr) {
+          console.error('Error tracking user on /start:', dbErr);
+        }
+      }
 
       const welcomeText =
         `👋 *Assalomu alaykum, ${firstName}!*\n\n` +

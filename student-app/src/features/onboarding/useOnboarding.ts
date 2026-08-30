@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import api from "../../services/api";
+import { useStore } from "../../store/useStore";
 
 export interface OnboardingData {
   ageGroup: string;
@@ -21,20 +22,10 @@ export const useOnboarding = () => {
   const [loading, setLoading] = useState(false);
 
   const checkStatus = useCallback(async (): Promise<OnboardingStatus> => {
-    // Agar local storage'da allaqachon yakunlangan bo'lsa
-    if (localStorage.getItem("nova_onboarding_completed") === "true") {
-      const completed = { hasOnboarding: true, isCompleted: true, partial: null };
-      setStatus(completed);
-      return completed;
-    }
-
     setLoading(true);
     try {
       const res = await api.get("/onboarding/status");
       const data = res.data.data as OnboardingStatus;
-      if (data.isCompleted) {
-        localStorage.setItem("nova_onboarding_completed", "true");
-      }
       setStatus(data);
       return data;
     } catch {
@@ -50,28 +41,39 @@ export const useOnboarding = () => {
     try {
       await api.post("/onboarding/save", data);
     } catch {
-      // Qisman saqlashda xatolik — foydalanuvchini bloklamaymiz
+      // Qisman saqlashda xatolik bo'lsa bloklamaymiz
     }
   }, []);
 
   const complete = useCallback(async (data: OnboardingData): Promise<boolean> => {
     try {
       await api.post("/onboarding/complete", data);
-      localStorage.setItem("nova_onboarding_completed", "true");
+      const currentUser = useStore.getState().user;
+      if (currentUser) {
+        useStore.getState().updateUser({ ...currentUser, onboardingCompleted: true });
+      }
       return true;
     } catch (err) {
-      console.warn("Onboarding complete sync error, proceeding locally:", err);
-      localStorage.setItem("nova_onboarding_completed", "true");
-      return true; // Foydalanuvchini hech qachon ekranda bloklab qo'ymaymiz
+      console.error("Onboarding complete error:", err);
+      // Agar internet xatosi bo'lsa ham UI'da davom ettirish
+      const currentUser = useStore.getState().user;
+      if (currentUser) {
+        useStore.getState().updateUser({ ...currentUser, onboardingCompleted: true });
+      }
+      return true;
     }
   }, []);
 
   const skip = useCallback(async () => {
-    localStorage.setItem("nova_onboarding_completed", "true");
     try {
       await api.post("/onboarding/skip");
     } catch {
-      // Offline yoki vaqtincha xatolik bo'lsa ham local saqlangan
+      // Error handling
+    } finally {
+      const currentUser = useStore.getState().user;
+      if (currentUser) {
+        useStore.getState().updateUser({ ...currentUser, onboardingCompleted: true });
+      }
     }
   }, []);
 
