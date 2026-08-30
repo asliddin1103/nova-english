@@ -23,11 +23,11 @@ function LoadingScreen() {
   return (
     <div className="fixed inset-0 bg-[#0A1628] flex flex-col items-center justify-center gap-6">
       <motion.div
-        animate={{ scale: [1, 1.15, 1] }}
-        transition={{ duration: 1.5, repeat: Infinity }}
-        className="w-20 h-20 rounded-3xl nova-gradient flex items-center justify-center shadow-glow-blue"
+        animate={{ scale: [1, 1.08, 1] }}
+        transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+        className="w-24 h-24 rounded-3xl overflow-hidden shadow-[0_0_30px_rgba(26,115,232,0.4)] border-2 border-white/10 bg-white p-1"
       >
-        <span className="text-white font-black text-3xl">N</span>
+        <img src="/logo.jpg" alt="Nova English Logo" className="w-full h-full object-cover rounded-2xl" />
       </motion.div>
       <div>
         <span className="font-black text-2xl text-white tracking-tight">NOVA</span>

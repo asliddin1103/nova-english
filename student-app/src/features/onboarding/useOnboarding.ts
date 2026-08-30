@@ -66,5 +66,14 @@ export const useOnboarding = () => {
     }
   }, []);
 
-  return { status, loading, checkStatus, savePartial, complete };
+  const skip = useCallback(async () => {
+    localStorage.setItem("nova_onboarding_completed", "true");
+    try {
+      await api.post("/onboarding/skip");
+    } catch {
+      // Offline yoki vaqtincha xatolik bo'lsa ham local saqlangan
+    }
+  }, []);
+
+  return { status, loading, checkStatus, savePartial, complete, skip };
 };

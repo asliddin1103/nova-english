@@ -1,4 +1,4 @@
-﻿import { Bell } from "@phosphor-icons/react";
+import { Bell } from "@phosphor-icons/react";
 
 interface TopBarProps {
   title?: string;
@@ -10,9 +10,9 @@ export default function TopBar({ title, showLogo = true }: TopBarProps) {
     <header className="sticky top-0 z-40 bg-white border-b border-slate-100 shadow-sm">
       <div className="flex items-center justify-between px-5 py-3">
         {showLogo ? (
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl nova-gradient flex items-center justify-center shadow-glow-blue">
-              <span className="text-white font-black text-sm">N</span>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl overflow-hidden shadow-sm border border-slate-100 shrink-0 bg-white">
+              <img src="/logo.jpg" alt="Nova English Logo" className="w-full h-full object-cover" />
             </div>
             <div>
               <span className="font-black text-[#0A1628] text-base tracking-tight">NOVA</span>

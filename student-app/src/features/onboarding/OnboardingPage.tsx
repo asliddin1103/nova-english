@@ -4,7 +4,7 @@ import { useOnboarding, OnboardingData } from "./useOnboarding";
 
 // ── Savol konfiguratsiyalari
 const AGE_OPTIONS = ["13–17", "18–24", "25–34", "35+"];
-const GENDER_OPTIONS = ["Erkak", "Ayol", "Aytmoqchi emasman"];
+const GENDER_OPTIONS = ["Erkak", "Ayol"];
 const GOAL_OPTIONS = [
   "IELTS/IDP topshirish uchun",
   "Chet elga o'qishga ketish uchun",
@@ -143,7 +143,7 @@ function Screen1({ data, onChange }: { data: Partial<OnboardingData>; onChange: 
           options={GENDER_OPTIONS}
           value={data.gender ?? ""}
           onChange={(v) => onChange({ ...data, gender: v })}
-          cols={1}
+          cols={2}
         />
       </div>
     </div>
@@ -209,7 +209,7 @@ function Screen3({ data, onChange }: { data: Partial<OnboardingData>; onChange: 
 }
 
 export default function OnboardingPage({ initial = {}, onComplete, onSkip }: Props) {
-  const { complete, savePartial } = useOnboarding();
+  const { complete, savePartial, skip } = useOnboarding();
   const [screen, setScreen] = useState(0); // 0, 1, 2
   const [data, setData] = useState<Partial<OnboardingData>>(initial);
   const [submitting, setSubmitting] = useState(false);
@@ -290,8 +290,8 @@ export default function OnboardingPage({ initial = {}, onComplete, onSkip }: Pro
             </p>
             <h2 className="text-xl font-black text-[#0A1628]">{SCREEN_TITLES[screen]}</h2>
           </div>
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#1A73E8] to-[#1557B0] flex items-center justify-center shadow-[0_4px_12px_rgba(26,115,232,0.35)]">
-            <span className="text-white font-black text-sm">N</span>
+          <div className="w-10 h-10 rounded-2xl overflow-hidden shadow-[0_4px_12px_rgba(26,115,232,0.25)] border border-slate-100 bg-white">
+            <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover" />
           </div>
         </div>
       </div>
@@ -325,7 +325,10 @@ export default function OnboardingPage({ initial = {}, onComplete, onSkip }: Pro
             </button>
           ) : (
             <button
-              onClick={onSkip}
+              onClick={() => {
+                skip();
+                onSkip();
+              }}
               className="flex-none px-5 py-3.5 rounded-2xl bg-slate-100 text-slate-500 font-bold text-sm"
             >
               O'tkazib yuborish

@@ -9,17 +9,20 @@ const router = Router();
 router.get('/status', requireStudent, async (req, res, next) => {
   try {
     const userId = req.student!.userId;
-    const onboarding = await prisma.userOnboarding.findUnique({
-      where: { userId },
-    });
+    const [user, onboarding] = await Promise.all([
+      prisma.user.findUnique({ where: { id: userId }, select: { onboardingCompleted: true } }),
+      prisma.userOnboarding.findUnique({ where: { userId } }),
+    ]);
+
+    const isCompleted = Boolean(user?.onboardingCompleted || onboarding?.isCompleted);
 
     res.json({
       success: true,
       data: {
         hasOnboarding: !!onboarding,
-        isCompleted: onboarding?.isCompleted ?? false,
+        isCompleted,
         // Partial data — foydalanuvchi davom ettirishi uchun
-        partial: onboarding && !onboarding.isCompleted ? {
+        partial: onboarding && !isCompleted ? {
           ageGroup: onboarding.ageGroup,
           gender: onboarding.gender,
           goals: onboarding.goals,
@@ -64,6 +67,9 @@ router.post('/complete', requireStudent, async (req, res, next) => {
     const userId = req.student!.userId;
     const { ageGroup, gender, goals, currentLevel, skills, dailyTime } = req.body || {};
 
+    const validGenders = ['Erkak', 'Ayol'];
+    const sanitizedGender = validGenders.includes(gender) ? gender : null;
+
     const cleanGoals = Array.isArray(goals) ? goals : [];
     const cleanSkills = Array.isArray(skills) ? skills : [];
 
@@ -71,7 +77,7 @@ router.post('/complete', requireStudent, async (req, res, next) => {
       where: { userId },
       update: {
         ageGroup: ageGroup ? String(ageGroup) : null,
-        gender: gender ? String(gender) : null,
+        gender: sanitizedGender,
         goals: cleanGoals,
         currentLevel: currentLevel ? String(currentLevel) : null,
         skills: cleanSkills,
@@ -92,24 +98,41 @@ router.post('/complete', requireStudent, async (req, res, next) => {
       },
     });
 
-    // Level map (o'quvchi darajasini User jadvalida ham aks ettirish)
+    // Foydalanuvchini onboardingCompleted = true qilib belgilash va darajasini yangilash
+    let mappedLevel = 'A1';
     if (currentLevel) {
-      let mappedLevel = 'A1';
       if (currentLevel.includes('Noldan') || currentLevel.includes("Boshlang'ich")) mappedLevel = 'A1';
       else if (currentLevel.includes("O'rta")) mappedLevel = 'B1';
       else if (currentLevel.includes('Yaxshi')) mappedLevel = 'B2';
-
-      await prisma.user.update({
-        where: { id: userId },
-        data: { languageLevel: mappedLevel },
-      }).catch(() => {});
     }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        onboardingCompleted: true,
+        ...(currentLevel && { languageLevel: mappedLevel }),
+      },
+    }).catch(() => {});
 
     res.json({ success: true, data: onboarding });
   } catch (err) {
     console.error('Onboarding complete error:', err);
     next(err);
   }
+});
+
+// POST /api/v1/onboarding/skip
+// O'tkazib yuborish — keyingi safar qayta ko'rsatilmasligi uchun onboardingCompleted = true
+router.post('/skip', requireStudent, async (req, res, next) => {
+  try {
+    const userId = req.student!.userId;
+    await prisma.user.update({
+      where: { id: userId },
+      data: { onboardingCompleted: true },
+    }).catch(() => {});
+
+    res.json({ success: true, message: 'Onboarding skipped' });
+  } catch (err) { next(err); }
 });
 
 export default router;
