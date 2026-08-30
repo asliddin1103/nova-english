@@ -4,6 +4,10 @@ import { Errors } from '../../common/utils/errors';
 
 export const devAuth = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
+    if (process.env.NODE_ENV === 'production') {
+      res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Dev login is disabled in production' } });
+      return;
+    }
     const { telegramId, firstName, lastName, username } = req.body || {};
     const result = await devLogin(telegramId, firstName, lastName, username);
     res.status(200).json({ success: true, data: result });
