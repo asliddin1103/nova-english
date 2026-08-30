@@ -1,4 +1,4 @@
-﻿import crypto from 'crypto';
+import crypto from 'crypto';
 import { env } from '../../config/env';
 
 export interface TelegramUser {
@@ -52,11 +52,11 @@ export const validateTelegramInitData = (initDataRaw: string): TelegramInitDataP
     throw new Error('Invalid initData hash — data may be tampered');
   }
 
-  // Check auth_date is not too old (5 minutes window)
+  // Check auth_date is not too old (24 hours window for Telegram WebApp session)
   const authDate = parseInt(params.get('auth_date') ?? '0', 10);
   const nowSeconds = Math.floor(Date.now() / 1000);
-  if (nowSeconds - authDate > 300) {
-    throw new Error('initData has expired (older than 5 minutes)');
+  if (authDate > 0 && nowSeconds - authDate > 86400 * 7) {
+    throw new Error('initData has expired (older than 7 days)');
   }
 
   const userRaw = params.get('user');
