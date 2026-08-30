@@ -232,7 +232,7 @@ export default function OnboardingPage({ initial = {}, onComplete, onSkip }: Pro
 
   const handleNext = async () => {
     // Qisman saqlash
-    await savePartial(data);
+    savePartial(data).catch(() => {});
 
     if (screen < TOTAL - 1) {
       setDirection(1);
@@ -240,9 +240,14 @@ export default function OnboardingPage({ initial = {}, onComplete, onSkip }: Pro
     } else {
       // Yakunlash
       setSubmitting(true);
-      const success = await complete(data as OnboardingData);
-      setSubmitting(false);
-      if (success) onComplete();
+      try {
+        await complete(data as OnboardingData);
+      } catch {
+        // Xatolik bo'lsa ham foydalanuvchini o'tkazish
+      } finally {
+        setSubmitting(false);
+        onComplete();
+      }
     }
   };
 

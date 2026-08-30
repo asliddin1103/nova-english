@@ -62,35 +62,54 @@ router.post('/save', requireStudent, async (req, res, next) => {
 router.post('/complete', requireStudent, async (req, res, next) => {
   try {
     const userId = req.student!.userId;
-    const { ageGroup, gender, goals, currentLevel, skills, dailyTime } = req.body;
+    const { ageGroup, gender, goals, currentLevel, skills, dailyTime } = req.body || {};
+
+    const cleanGoals = Array.isArray(goals) ? goals : [];
+    const cleanSkills = Array.isArray(skills) ? skills : [];
 
     const onboarding = await prisma.userOnboarding.upsert({
       where: { userId },
       update: {
-        ageGroup,
-        gender,
-        goals: Array.isArray(goals) ? goals : [],
-        currentLevel,
-        skills: Array.isArray(skills) ? skills : [],
-        dailyTime,
+        ageGroup: ageGroup ? String(ageGroup) : null,
+        gender: gender ? String(gender) : null,
+        goals: cleanGoals,
+        currentLevel: currentLevel ? String(currentLevel) : null,
+        skills: cleanSkills,
+        dailyTime: dailyTime ? String(dailyTime) : null,
         isCompleted: true,
         completedAt: new Date(),
       },
       create: {
         userId,
-        ageGroup,
-        gender,
-        goals: Array.isArray(goals) ? goals : [],
-        currentLevel,
-        skills: Array.isArray(skills) ? skills : [],
-        dailyTime,
+        ageGroup: ageGroup ? String(ageGroup) : null,
+        gender: gender ? String(gender) : null,
+        goals: cleanGoals,
+        currentLevel: currentLevel ? String(currentLevel) : null,
+        skills: cleanSkills,
+        dailyTime: dailyTime ? String(dailyTime) : null,
         isCompleted: true,
         completedAt: new Date(),
       },
     });
 
+    // Level map (o'quvchi darajasini User jadvalida ham aks ettirish)
+    if (currentLevel) {
+      let mappedLevel = 'A1';
+      if (currentLevel.includes('Noldan') || currentLevel.includes("Boshlang'ich")) mappedLevel = 'A1';
+      else if (currentLevel.includes("O'rta")) mappedLevel = 'B1';
+      else if (currentLevel.includes('Yaxshi')) mappedLevel = 'B2';
+
+      await prisma.user.update({
+        where: { id: userId },
+        data: { languageLevel: mappedLevel },
+      }).catch(() => {});
+    }
+
     res.json({ success: true, data: onboarding });
-  } catch (err) { next(err); }
+  } catch (err) {
+    console.error('Onboarding complete error:', err);
+    next(err);
+  }
 });
 
 export default router;

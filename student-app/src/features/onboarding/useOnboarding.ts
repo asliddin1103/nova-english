@@ -21,10 +21,20 @@ export const useOnboarding = () => {
   const [loading, setLoading] = useState(false);
 
   const checkStatus = useCallback(async (): Promise<OnboardingStatus> => {
+    // Agar local storage'da allaqachon yakunlangan bo'lsa
+    if (localStorage.getItem("nova_onboarding_completed") === "true") {
+      const completed = { hasOnboarding: true, isCompleted: true, partial: null };
+      setStatus(completed);
+      return completed;
+    }
+
     setLoading(true);
     try {
       const res = await api.get("/onboarding/status");
       const data = res.data.data as OnboardingStatus;
+      if (data.isCompleted) {
+        localStorage.setItem("nova_onboarding_completed", "true");
+      }
       setStatus(data);
       return data;
     } catch {
@@ -47,9 +57,12 @@ export const useOnboarding = () => {
   const complete = useCallback(async (data: OnboardingData): Promise<boolean> => {
     try {
       await api.post("/onboarding/complete", data);
+      localStorage.setItem("nova_onboarding_completed", "true");
       return true;
-    } catch {
-      return false;
+    } catch (err) {
+      console.warn("Onboarding complete sync error, proceeding locally:", err);
+      localStorage.setItem("nova_onboarding_completed", "true");
+      return true; // Foydalanuvchini hech qachon ekranda bloklab qo'ymaymiz
     }
   }, []);
 
