@@ -4,7 +4,6 @@ import { Toaster } from "react-hot-toast";
 
 import { useTelegramAuth } from "./features/auth/useTelegramAuth";
 import { useStore } from "./store/useStore";
-import { useOnboarding } from "./features/onboarding/useOnboarding";
 import OnboardingPage from "./features/onboarding/OnboardingPage";
 
 import TopBar from "./components/layout/TopBar";
@@ -68,29 +67,9 @@ const PAGE_TITLES: Record<Tab, string> = {
 
 export default function App() {
   const { loading, error } = useTelegramAuth();
-  const { user } = useStore();
+  const { user, updateUser } = useStore();
   const [activeTab, setActiveTab] = useState<Tab>("home");
   const [showPayment, setShowPayment] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [onboardingChecked, setOnboardingChecked] = useState(false);
-  const { status, checkStatus } = useOnboarding();
-
-  useEffect(() => {
-    if (!loading && user) {
-      if (user.onboardingCompleted) {
-        setShowOnboarding(false);
-        setOnboardingChecked(true);
-        return;
-      }
-
-      checkStatus().then((res) => {
-        setShowOnboarding(!res.isCompleted);
-        setOnboardingChecked(true);
-      }).catch(() => {
-        setOnboardingChecked(true);
-      });
-    }
-  }, [loading, user?.id, user?.onboardingCompleted, checkStatus]);
 
   const isSubscribed = !!(
     user?.isSubscribed &&
@@ -98,19 +77,25 @@ export default function App() {
     new Date(user.subscriptionExpiresAt) > new Date()
   );
 
-  if (loading || (user && !onboardingChecked)) return <LoadingScreen />;
+  if (loading) return <LoadingScreen />;
   if (error) return <ErrorScreen message={error} />;
 
-  if (showOnboarding) {
+  // 1. Agar foydalanuvchi onboarding'ni to'ldirmagan bo'lsa (onboardingCompleted === false)
+  if (user && !user.onboardingCompleted) {
     return (
       <OnboardingPage
-        initial={status?.partial || {}}
-        onComplete={() => setShowOnboarding(false)}
-        onSkip={() => setShowOnboarding(false)}
+        initial={user.onboarding || {}}
+        onComplete={() => {
+          updateUser({ ...user, onboardingCompleted: true });
+        }}
+        onSkip={() => {
+          updateUser({ ...user, onboardingCompleted: true });
+        }}
       />
     );
   }
 
+  // 2. To'lov sahifasi
   if (showPayment) {
     return (
       <div className="flex flex-col h-screen max-w-md mx-auto overflow-hidden bg-slate-50">
