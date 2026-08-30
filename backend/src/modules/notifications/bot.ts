@@ -18,6 +18,45 @@ export const initBot = (): Bot | null => {
 
     const webAppUrl = process.env.MINI_APP_URL || 'https://nova-english-app.vercel.app';
 
+    // Handle my_chat_member (bot blocked, deleted or unblocked)
+    bot.on('my_chat_member', async (ctx: any) => {
+      try {
+        const update = ctx.myChatMember || ctx.my_chat_member || ctx;
+        const newStatus = update?.new_chat_member?.status || update?.newChatMember?.status;
+        const telegramId = String(
+          update?.from?.id ||
+          update?.chat?.id ||
+          ctx?.from?.id ||
+          ctx?.chat?.id
+        );
+
+        if (!telegramId || telegramId === 'undefined') return;
+
+        if (newStatus === 'kicked') {
+          // Foydalanuvchi botni bloklagan yoki o'chirgan
+          console.log(`🚫 Foydalanuvchi (ID: ${telegramId}) botni blokladi/o'chirdi (status: kicked).`);
+          await prisma.user.updateMany({
+            where: { telegramId },
+            data: {
+              onboardingCompleted: false,
+              botStatus: 'kicked',
+            },
+          });
+        } else if (newStatus === 'member') {
+          // Foydalanuvchi botni qayta ochgan/faollashtirgan
+          console.log(`✅ Foydalanuvchi (ID: ${telegramId}) botni qayta faollashtirdi (status: member).`);
+          await prisma.user.updateMany({
+            where: { telegramId },
+            data: {
+              botStatus: 'member',
+            },
+          });
+        }
+      } catch (err) {
+        console.error('⚠️ Error in my_chat_member handler:', err);
+      }
+    });
+
     // Handle /start command
     bot.command('start', async (ctx) => {
       const telegramId = ctx.from?.id ? String(ctx.from.id) : null;
@@ -32,7 +71,7 @@ export const initBot = (): Bot | null => {
           });
 
           if (!existingUser) {
-            // 1. Yangi foydalanuvchi — onboardingCompleted = false
+            // 1. Yangi foydalanuvchi — onboardingCompleted = false, botStatus = member
             await prisma.user.create({
               data: {
                 telegramId,
@@ -40,18 +79,20 @@ export const initBot = (): Bot | null => {
                 lastName,
                 username,
                 onboardingCompleted: false,
+                botStatus: 'member',
                 streak: { create: {} },
                 coins: { create: { total: 0 } },
               },
             });
           } else {
-            // 2. Mavjud foydalanuvchi ma'lumotlarini yangilash
+            // 2. Mavjud foydalanuvchi — botStatus qayta 'member' qilinadi
             await prisma.user.update({
               where: { telegramId },
               data: {
                 firstName,
                 lastName,
                 username,
+                botStatus: 'member',
               },
             });
           }

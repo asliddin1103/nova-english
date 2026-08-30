@@ -66,13 +66,28 @@ router.post('/complete', requireStudent, async (req, res, next) => {
   try {
     const userId = req.student!.userId;
     const { ageGroup, gender, goals, currentLevel, skills, dailyTime } = req.body || {};
-
     const validGenders = ['Erkak', 'Ayol'];
     const sanitizedGender = validGenders.includes(gender) ? gender : null;
-
     const cleanGoals = Array.isArray(goals) ? goals : [];
     const cleanSkills = Array.isArray(skills) ? skills : [];
 
+    // 1. Tarixiy jadvalga yangi submission yozish (har bir urinish saqlanib qoladi)
+    await prisma.onboardingSubmission.create({
+      data: {
+        userId,
+        ageGroup: ageGroup ? String(ageGroup) : null,
+        gender: sanitizedGender,
+        goals: cleanGoals,
+        currentLevel: currentLevel ? String(currentLevel) : null,
+        skills: cleanSkills,
+        dailyTime: dailyTime ? String(dailyTime) : null,
+        submittedAt: new Date(),
+      },
+    }).catch((err) => {
+      console.error('Error creating historical OnboardingSubmission:', err);
+    });
+
+    // 2. Joriy (eng so'nggi) onboarding ma'lumotlarini UserOnboarding jadvalida saqlash
     const onboarding = await prisma.userOnboarding.upsert({
       where: { userId },
       update: {
@@ -88,7 +103,7 @@ router.post('/complete', requireStudent, async (req, res, next) => {
       create: {
         userId,
         ageGroup: ageGroup ? String(ageGroup) : null,
-        gender: gender ? String(gender) : null,
+        gender: sanitizedGender,
         goals: cleanGoals,
         currentLevel: currentLevel ? String(currentLevel) : null,
         skills: cleanSkills,
@@ -98,7 +113,7 @@ router.post('/complete', requireStudent, async (req, res, next) => {
       },
     });
 
-    // Foydalanuvchini onboardingCompleted = true qilib belgilash va darajasini yangilash
+    // 3. Foydalanuvchini onboardingCompleted = true qilib belgilash va darajasini yangilash
     let mappedLevel = 'A1';
     if (currentLevel) {
       if (currentLevel.includes('Noldan') || currentLevel.includes("Boshlang'ich")) mappedLevel = 'A1';
@@ -110,6 +125,7 @@ router.post('/complete', requireStudent, async (req, res, next) => {
       where: { id: userId },
       data: {
         onboardingCompleted: true,
+        botStatus: 'member',
         ...(currentLevel && { languageLevel: mappedLevel }),
       },
     }).catch(() => {});
